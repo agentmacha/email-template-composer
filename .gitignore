@@ -6,6 +6,9 @@ backend/node_modules/
 dist/
 backend/dist/
 
+# Angular cache
+.angular/cache/
+
 # Environment files
 .env
 backend/.env
