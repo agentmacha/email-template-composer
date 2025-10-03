@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Organizations collection
+    match /organizations/{orgId} {
+      allow read, write: if request.auth != null && 
+        (request.auth.token.role == 'admin' || 
+         resource.data.members[request.auth.uid] != null);
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      allow read, write: if request.auth != null && 
+        (request.auth.uid == userId || 
+         request.auth.token.role == 'admin');
+    }
+    
+    // Templates collection
+    match /templates/{templateId} {
+      allow read, write: if request.auth != null && 
+        (resource.data.organizationId == request.auth.token.organizationId ||
+         resource.data.isPublic == true);
+    }
+    
+    // Organization-specific templates
+    match /organizations/{orgId}/templates/{templateId} {
+      allow read, write: if request.auth != null && 
+        request.auth.token.organizationId == orgId;
+    }
+  }
+}
+
+
+
+

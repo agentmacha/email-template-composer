@@ -1,0 +1,395 @@
+<div class="composer-dialog">
+  <h2 mat-dialog-title>New Email Template</h2>
+  <div mat-dialog-content class="composer-content">
+    <form [formGroup]="form" class="composer-form">
+      <mat-form-field appearance="outline">
+        <mat-label>Template Name</mat-label>
+        <input matInput formControlName="name" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Subject</mat-label>
+        <input matInput formControlName="subject" />
+      </mat-form-field>
+    </form>
+
+    <div class="layout">
+      <div class="canvas-wrapper">
+        <div class="canvas-toolbar">
+          <div class="toolbar-section">
+            <h3>📧 Build Your Email</h3>
+            <div class="toolbar-buttons">
+              <button mat-stroked-button color="primary" [matMenuTriggerFor]="componentsMenu" class="primary-btn">
+                <mat-icon>add_circle</mat-icon>
+                Add Block
+              </button>
+              <button mat-stroked-button color="accent" [matMenuTriggerFor]="placeholdersMenu" class="secondary-btn">
+                <mat-icon>smart_toy</mat-icon>
+                Variables
+              </button>
+            </div>
+          </div>
+          
+          <div class="toolbar-section ai-section">
+            <h3>🤖 AI Assistant</h3>
+            <div class="toolbar-buttons">
+              <button mat-flat-button color="primary" (click)="openAiWriteBar()" [disabled]="aiLoading" class="ai-btn">
+                <mat-icon *ngIf="!aiLoading">auto_fix_high</mat-icon>
+                <mat-progress-spinner *ngIf="aiLoading" diameter="16" mode="indeterminate"></mat-progress-spinner>
+                {{ aiLoading && aiInputMode === 'write' ? 'Writing...' : 'Write with AI' }}
+              </button>
+              <button mat-flat-button color="accent" (click)="openAiDesignBar()" [disabled]="aiLoading" class="ai-btn">
+                <mat-icon *ngIf="!aiLoading">palette</mat-icon>
+                <mat-progress-spinner *ngIf="aiLoading" diameter="16" mode="indeterminate"></mat-progress-spinner>
+                {{ aiLoading && aiInputMode === 'design' ? 'Designing...' : 'Design with AI' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="toolbar-section">
+            <h3>✏️ Format</h3>
+            <div class="format-buttons">
+              <button mat-icon-button matTooltip="Bold" (click)="format('bold')" class="format-btn"><mat-icon>format_bold</mat-icon></button>
+              <button mat-icon-button matTooltip="Italic" (click)="format('italic')" class="format-btn"><mat-icon>format_italic</mat-icon></button>
+              <button mat-icon-button matTooltip="Underline" (click)="format('underline')" class="format-btn"><mat-icon>format_underlined</mat-icon></button>
+              <button mat-icon-button matTooltip="Bulleted list" (click)="insertList()" class="format-btn"><mat-icon>format_list_bulleted</mat-icon></button>
+              <button mat-icon-button matTooltip="Insert link" (click)="insertLink()" class="format-btn"><mat-icon>link</mat-icon></button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Enhanced AI Assistant Panel -->
+        <div class="ai-assistant-panel" *ngIf="aiInputVisible">
+          <div class="ai-panel-header">
+            <div class="ai-panel-title">
+              <mat-icon>auto_fix_high</mat-icon>
+              <h3>AI Assistant</h3>
+            </div>
+            <button mat-icon-button (click)="closeAiInputBar()" class="close-btn">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+          
+          <div class="ai-panel-content">
+            <div class="ai-sections">
+              <div class="ai-section create-section">
+                <h4>Create</h4>
+                <div class="ai-options">
+                  <button mat-stroked-button class="ai-option" (click)="triggerImageUpload()">
+                    <mat-icon>image</mat-icon>
+                    <span>Insert a new image</span>
+                  </button>
+                  <button mat-stroked-button class="ai-option" (click)="openAiDesignBar()">
+                    <mat-icon>palette</mat-icon>
+                    <span>Create with AI Studio</span>
+                  </button>
+                  <button mat-stroked-button class="ai-option" (click)="openAiWriteBar()">
+                    <mat-icon>text_fields</mat-icon>
+                    <span>Generate text</span>
+                  </button>
+                  <button mat-stroked-button class="ai-option" (click)="insertButtonSnippet()">
+                    <mat-icon>grid_view</mat-icon>
+                    <span>Create from template</span>
+                  </button>
+                  <button mat-stroked-button class="ai-option" (click)="openAiWriteBar()">
+                    <mat-icon>help</mat-icon>
+                    <span>Ask a question</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="ai-section refine-section">
+                <h4>Refine</h4>
+                <div class="ai-options">
+                  <button mat-stroked-button class="ai-option" (click)="onAiGenerateFromInput()" [disabled]="aiLoading">
+                    <mat-icon>refresh</mat-icon>
+                    <span>Regenerate</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="ai-section recent-section">
+                <h4>Recent Prompts</h4>
+                <div class="recent-prompts">
+                  <div class="recent-prompt" *ngFor="let prompt of recentPrompts" (click)="onRecentPromptClick(prompt)">
+                    <mat-icon>bolt</mat-icon>
+                    <span>{{ prompt }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ai-input-section">
+              <mat-form-field appearance="outline" class="ai-input-field">
+                <mat-icon matPrefix>edit</mat-icon>
+                <mat-label>What would you like to do?</mat-label>
+                <textarea matInput rows="2" [(ngModel)]="aiInputText" (keyup.enter)="onAiGenerateFromInput()" [disabled]="aiLoading" placeholder="Describe what you want to create or improve..."></textarea>
+              </mat-form-field>
+              <div class="ai-input-actions">
+                <button mat-flat-button color="primary" (click)="onAiGenerateFromInput()" [disabled]="aiLoading || !aiInputText.trim()" class="generate-btn">
+                  <mat-icon *ngIf="!aiLoading">auto_fix_high</mat-icon>
+                  <mat-progress-spinner *ngIf="aiLoading" diameter="16" mode="indeterminate"></mat-progress-spinner>
+                  {{ aiLoading ? 'Generating...' : 'Generate' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="content-area">
+          <div class="canvas-container">
+            <div class="composer-canvas" contenteditable="true" cdkDropList (cdkDropListDropped)="onCanvasDrop($event)"
+                (click)="onCanvasClick($event)"
+                (input)="onCanvasInput($event)" (mouseup)="saveSelection()" (keyup)="saveSelection()" #canvasRef>
+            </div>
+            
+            <!-- Canvas loading overlay -->
+            <div class="canvas-loading-overlay" *ngIf="aiLoading && aiInputMode === 'design'">
+              <div class="canvas-loading-content">
+                <mat-progress-spinner diameter="40" mode="indeterminate"></mat-progress-spinner>
+                <h3>Designing your email...</h3>
+                <p>AI is creating a beautiful email template for you</p>
+              </div>
+            </div>
+            
+            <!-- AI Preview Overlay (replaces sidebar) -->
+            <div class="ai-preview-overlay" *ngIf="aiPreviewVisible">
+              <div class="ai-preview-content">
+                <div class="ai-preview-header">
+                  <h3>AI Generated Content</h3>
+                  <p>Review the generated content below and choose an action</p>
+                </div>
+                <div class="ai-preview-text">{{ aiPreviewText }}</div>
+                <div class="ai-preview-actions">
+                  <button mat-button type="button" (click)="recreateAiPreview()" [disabled]="aiLoading">
+                    <mat-icon>refresh</mat-icon>
+                    Recreate
+                  </button>
+                  <button mat-button type="button" [matMenuTriggerFor]="aiRefineMenu" [disabled]="aiLoading">
+                    <mat-icon>tune</mat-icon>
+                    Refine
+                  </button>
+                  <button mat-flat-button color="primary" type="button" (click)="applyAiPreview()" [disabled]="aiLoading || !aiPreviewText">
+                    <mat-icon>check</mat-icon>
+                    Insert
+                  </button>
+                  <button mat-button type="button" (click)="closeAiPreview()">
+                    <mat-icon>close</mat-icon>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="properties-wrapper" *ngIf="selectedType">
+        <div class="prop-header">
+          <strong>Properties</strong>
+          <span class="type">{{ selectedType }}</span>
+          <span class="spacer"></span>
+          <button mat-button color="primary" (click)="clearSelection()">Clear</button>
+        </div>
+        <form [formGroup]="propertiesForm" class="prop-form" *ngIf="propertiesForm">
+          <ng-container [ngSwitch]="selectedType">
+            <ng-container *ngSwitchCase="'button'">
+              <mat-form-field appearance="outline"><mat-label>Preset</mat-label>
+                <mat-select formControlName="preset">
+                  <mat-option value="custom">Custom</mat-option>
+                  <mat-option value="call">Call Us (tel)</mat-option>
+                  <mat-option value="schedule">Schedule Online</mat-option>
+                  <mat-option value="directions">Get Directions</mat-option>
+                  <mat-option value="review">Leave a Review</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Text</mat-label><input matInput formControlName="text" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>URL</mat-label><input matInput formControlName="href" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Background</mat-label><input matInput type="color" formControlName="bg" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Text Color</mat-label><input matInput type="color" formControlName="color" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Radius</mat-label><input matInput formControlName="radius" placeholder="6px" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Align</mat-label><input matInput formControlName="align" placeholder="left|center|right" /></mat-form-field>
+            </ng-container>
+            <ng-container *ngSwitchCase="'header-block'">
+              <mat-form-field appearance="outline"><mat-label>Logo URL</mat-label><input matInput formControlName="logoSrc" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Salon Name</mat-label><input matInput formControlName="salonName" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Address/Contact Line</mat-label><input matInput formControlName="addressLine" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Email Link</mat-label><input matInput formControlName="emailHref" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Accent Color</mat-label><input matInput type="color" formControlName="color" /></mat-form-field>
+            </ng-container>
+            <ng-container *ngSwitchCase="'footer'">
+              <mat-form-field appearance="outline"><mat-label>Brand Line</mat-label><input matInput formControlName="brandLine" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Unsubscribe Text</mat-label><input matInput formControlName="unsubText" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Unsubscribe URL</mat-label><input matInput formControlName="unsubHref" /></mat-form-field>
+            </ng-container>
+            <ng-container *ngSwitchCase="'image'">
+              <mat-form-field appearance="outline"><mat-label>Image URL</mat-label><input matInput formControlName="src" /></mat-form-field>
+              <div>
+                <button mat-stroked-button color="primary" (click)="triggerImageUpload()" [disabled]="imageUploading">
+                  <mat-icon>cloud_upload</mat-icon>
+                  Upload & insert
+                </button>
+                <input id="composerImageInput" type="file" accept="image/*" (change)="onToolbarImageSelected($event)" style="display:none" />
+              </div>
+              <mat-form-field appearance="outline"><mat-label>Alt</mat-label><input matInput formControlName="alt" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Width</mat-label><input matInput formControlName="width" placeholder="100% or 300px" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Align</mat-label><input matInput formControlName="align" placeholder="left|center|right" /></mat-form-field>
+            </ng-container>
+            <ng-container *ngSwitchCase="'spacer'">
+              <mat-form-field appearance="outline"><mat-label>Height</mat-label><input matInput formControlName="height" placeholder="20px" /></mat-form-field>
+            </ng-container>
+            <ng-container *ngSwitchCase="'header'">
+              <mat-form-field appearance="outline"><mat-label>Text</mat-label><input matInput formControlName="text" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Align</mat-label><input matInput formControlName="align" placeholder="left|center|right" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Font Size</mat-label><input matInput formControlName="fontSize" placeholder="24px" /></mat-form-field>
+            </ng-container>
+            <ng-container *ngSwitchCase="'image-text'">
+              <mat-form-field appearance="outline"><mat-label>Image URL</mat-label><input matInput formControlName="src" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Alt</mat-label><input matInput formControlName="alt" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Image Width</mat-label><input matInput formControlName="imgWidth" placeholder="40%" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Orientation</mat-label><input matInput formControlName="orientation" placeholder="image-left|image-right" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Text</mat-label><textarea matInput rows="4" formControlName="text"></textarea></mat-form-field>
+              <div class="prop-ai">
+                <button mat-stroked-button color="primary" (click)="aiForImageText('friendly')" [disabled]="aiLoading">Friendly</button>
+                <button mat-stroked-button color="primary" (click)="aiForImageText('expand')" [disabled]="aiLoading">Expand</button>
+                <button mat-stroked-button color="primary" (click)="aiForImageText('shorten')" [disabled]="aiLoading">Shorten</button>
+              </div>
+            </ng-container>
+          </ng-container>
+        </form>
+      </div>
+    </div>
+
+    <mat-menu #componentsMenu="matMenu" class="components-menu">
+      <div class="menu-header">
+        <h4>📧 Add Email Blocks</h4>
+        <p>Drag or click to add content blocks</p>
+      </div>
+      
+      <div class="menu-section">
+        <h5>📝 Content Blocks</h5>
+        <button mat-menu-item (click)="insertAtCaret('\n')" class="menu-item">
+          <mat-icon>text_fields</mat-icon>
+          <div class="menu-content">
+            <span class="menu-title">Text Block</span>
+            <span class="menu-desc">Add a paragraph of text</span>
+          </div>
+        </button>
+        <button mat-menu-item (click)="insertHeader()" class="menu-item">
+          <mat-icon>title</mat-icon>
+          <div class="menu-content">
+            <span class="menu-title">Header</span>
+            <span class="menu-desc">Add a title or heading</span>
+          </div>
+        </button>
+        <button mat-menu-item (click)="insertImageText()" class="menu-item">
+          <mat-icon>view_sidebar</mat-icon>
+          <div class="menu-content">
+            <span class="menu-title">Image + Text</span>
+            <span class="menu-desc">Side-by-side image and text</span>
+          </div>
+        </button>
+        <button mat-menu-item (click)="insertTwoColumn()" class="menu-item">
+          <mat-icon>view_column</mat-icon>
+          <div class="menu-content">
+            <span class="menu-title">Two Columns</span>
+            <span class="menu-desc">Split content into two columns</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="menu-section">
+        <h5>🖼️ Media</h5>
+        <button mat-menu-item (click)="insertImagePlaceholder()" class="menu-item">
+          <mat-icon>image</mat-icon>
+          <div class="menu-content">
+            <span class="menu-title">Image</span>
+            <span class="menu-desc">Add a photo or graphic</span>
+          </div>
+        </button>
+        <button mat-menu-item (click)="insertSpacer()" class="menu-item">
+          <mat-icon>height</mat-icon>
+          <div class="menu-content">
+            <span class="menu-title">Spacer</span>
+            <span class="menu-desc">Add vertical space</span>
+          </div>
+        </button>
+        <button mat-menu-item (click)="insertFooter()" class="menu-item">
+          <mat-icon>footer</mat-icon>
+          <div class="menu-content">
+            <span class="menu-title">Footer</span>
+            <span class="menu-desc">Add salon footer with branding</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="menu-section">
+        <h5>🔘 Action Buttons</h5>
+        <button mat-menu-item (click)="insertButtonSnippet()" class="menu-item">
+          <mat-icon>smart_button</mat-icon>
+          <div class="menu-content">
+            <span class="menu-title">Custom Button</span>
+            <span class="menu-desc">Create your own button</span>
+          </div>
+        </button>
+        <button mat-menu-item (click)="insertCallButton()" class="menu-item">
+          <mat-icon>call</mat-icon>
+          <div class="menu-content">
+            <span class="menu-title">Call Salon</span>
+            <span class="menu-desc">Phone number button</span>
+          </div>
+        </button>
+        <button mat-menu-item (click)="insertScheduleButton()" class="menu-item">
+          <mat-icon>event</mat-icon>
+          <div class="menu-content">
+            <span class="menu-title">Book Appointment</span>
+            <span class="menu-desc">Appointment booking button</span>
+          </div>
+        </button>
+        <button mat-menu-item (click)="insertDirectionsButton()" class="menu-item">
+          <mat-icon>map</mat-icon>
+          <div class="menu-content">
+            <span class="menu-title">Visit Salon</span>
+            <span class="menu-desc">Location directions button</span>
+          </div>
+        </button>
+        <button mat-menu-item (click)="insertButtonRow()" class="menu-item">
+          <mat-icon>view_week</mat-icon>
+          <div class="menu-content">
+            <span class="menu-title">Button Row</span>
+            <span class="menu-desc">Multiple action buttons</span>
+          </div>
+        </button>
+      </div>
+    </mat-menu>
+
+    <mat-menu #placeholdersMenu="matMenu" class="ph-menu">
+      <div class="ph-panel">
+        <mat-form-field appearance="outline" class="ph-search">
+          <mat-label>Search placeholders</mat-label>
+          <input matInput [(ngModel)]="phQuery" placeholder="Type to filter" />
+        </mat-form-field>
+        <div class="ph-list">
+          <button mat-menu-item *ngFor="let p of filteredPlaceholders" (click)="insertAtCaret(p)">{{ p }}</button>
+        </div>
+      </div>
+    </mat-menu>
+
+    <mat-menu #aiRefineMenu="matMenu">
+      <button mat-menu-item (click)="refineAiPreview('friendly')" [disabled]="aiLoading">Make friendly</button>
+      <button mat-menu-item (click)="refineAiPreview('expand')" [disabled]="aiLoading">Elaborate</button>
+      <button mat-menu-item (click)="refineAiPreview('shorten')" [disabled]="aiLoading">Shorten</button>
+    </mat-menu>
+  </div>
+
+  <div mat-dialog-actions class="composer-actions">
+    <button mat-button mat-dialog-close>Cancel</button>
+    <button mat-stroked-button (click)="getSavedTemplates()">
+      <mat-icon>folder_open</mat-icon>
+      Load Templates
+    </button>
+    <button mat-flat-button color="primary" (click)="saveTemplate()" [disabled]="form.invalid || saving">
+      <mat-icon>save</mat-icon>
+      Save to GCP
+    </button>
+  </div>
+</div>

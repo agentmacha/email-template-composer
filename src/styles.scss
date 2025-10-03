@@ -1,0 +1,62 @@
+/* You can add global styles to this file, and also import other style files */
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+/* Global Material Design overrides */
+.mat-mdc-dialog-container {
+  --mdc-dialog-container-color: #ffffff;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Success snackbar styles */
+.success-snackbar {
+  background-color: #4caf50 !important;
+  color: white !important;
+}
+
+.success-snackbar .mat-mdc-snack-bar-label {
+  color: white !important;
+}
+
+/* Error snackbar styles */
+.error-snackbar {
+  background-color: #f44336 !important;
+  color: white !important;
+}
+
+.error-snackbar .mat-mdc-snack-bar-label {
+  color: white !important;
+}
+
+/* Visual template dialog styles */
+.visual-template-dialog .mat-mdc-dialog-container {
+  padding: 0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Dashboard dialog styles */
+.dashboard-dialog .mat-mdc-dialog-container {
+  padding: 0;
+  border-radius: 16px;
+  overflow: hidden;
+}
